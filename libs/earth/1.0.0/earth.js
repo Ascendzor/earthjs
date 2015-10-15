@@ -30,7 +30,11 @@
     var REMAINING = "▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫";   // glyphs for remaining progress bar
     var COMPLETED = "▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪";   // glyphs for completed progress bar
 
-    var view = µ.view();
+    var hostElement = document.getElementById('earthContainer');
+	var view = {
+		width: hostElement.offsetWidth,
+		height: hostElement.offsetHeight
+	};
     var log = µ.log();
 
     /**
