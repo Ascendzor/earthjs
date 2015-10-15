@@ -48,7 +48,7 @@
                     case -1: msg = "Server Down"; break;
                     case 404: msg = "No Data"; break;
                 }
-				debugger;
+				
                 log.error(err);
                 return s.classed("bad", true).text(msg);
             },
@@ -164,20 +164,6 @@
         }, MOVE_END_WAIT);  // wait for a bit to decide if user has stopped moving the globe
 
         d3.select("#display").call(zoom);
-        d3.select("#show-location").on("click", function() {
-            if (navigator.geolocation) {
-                report.status("Finding current position...");
-                navigator.geolocation.getCurrentPosition(function(pos) {
-                    report.status("");
-                    var coord = [pos.coords.longitude, pos.coords.latitude], rotate = globe.locate(coord);
-                    if (rotate) {
-                        globe.projection.rotate(rotate);
-                        configuration.save({orientation: globe.orientation()});  // triggers reorientation
-                    }
-                    dispatch.trigger("click", globe.projection(coord), coord);
-                }, log.error);
-            }
-        });
 
         function reorient() {
             var options = arguments[3] || {};
@@ -373,7 +359,6 @@
         var context = globe.defineMask(canvas.getContext("2d"));
         context.fillStyle = "rgba(255, 0, 0, 1)";
         context.fill();
-        // d3.select("#display").node().appendChild(canvas);  // make mask visible for debugging
 
         var imageData = context.getImageData(0, 0, width, height);
         var data = imageData.data;  // layout: [r, g, b, a, r, g, b, a, ...]
@@ -662,33 +647,11 @@
         var ctx = d3.select("#overlay").node().getContext("2d"), grid = (gridAgent.value() || {}).overlayGrid;
 
         µ.clearCanvas(d3.select("#overlay").node());
-        µ.clearCanvas(d3.select("#scale").node());
         if (overlayType) {
             if (overlayType !== "off") {
                 ctx.putImageData(field.overlay, 0, 0);
             }
             drawGridPoints(ctx, grid, globeAgent.value());
-        }
-
-        if (grid) {
-            // Draw color bar for reference.
-            var colorBar = d3.select("#scale"), scale = grid.scale, bounds = scale.bounds;
-            var c = colorBar.node(), g = c.getContext("2d"), n = c.width - 1;
-            for (var i = 0; i <= n; i++) {
-                var rgb = scale.gradient(µ.spread(i / n, bounds[0], bounds[1]), 1);
-                g.fillStyle = "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")";
-                g.fillRect(i, 0, 1, c.height);
-            }
-
-            // Show tooltip on hover.
-            colorBar.on("mousemove", function() {
-                var x = d3.mouse(this)[0];
-                var pct = µ.clamp((Math.round(x) - 2) / (n - 2), 0, 1);
-                var value = µ.spread(pct, bounds[0], bounds[1]);
-                var elementId = grid.type === "wind" ? "#location-wind-units" : "#location-value-units";
-                var units = createUnitToggle(elementId, grid).value();
-                colorBar.attr("title", µ.formatScalar(value, units) + " " + units.label);
-            });
         }
     }
 
@@ -710,20 +673,9 @@
     }
 
     /**
-     * Display the grid's validity date in the menu. Allow toggling between local and UTC time.
-     */
-    function showDate(grids) {
-        var date = new Date(validityDate(grids)), isLocal = d3.select("#data-date").classed("local");
-        var formatted = isLocal ? µ.toLocalISO(date) : µ.toUTCISO(date);
-        d3.select("#data-date").text(formatted + " " + (isLocal ? "Local" : "UTC"));
-        d3.select("#toggle-zone").text("⇄ " + (isLocal ? "UTC" : "Local"));
-    }
-
-    /**
      * Display the grids' types in the menu.
      */
     function showGridDetails(grids) {
-        showDate(grids);
         var description = "", center = "";
         if (grids) {
             var langCode = d3.select("body").attr("data-lang") || "en";
@@ -735,8 +687,6 @@
             }
             center = grids.overlayGrid.source;
         }
-        d3.select("#data-layer").text(description);
-        d3.select("#data-center").text(center);
     }
 
     /**
@@ -756,18 +706,6 @@
                 d3.select(id).attr("data-index", index = ((index + 1) % size));
             }
         };
-    }
-
-    /**
-     * Display the specified wind value. Allow toggling between the different types of wind units.
-     */
-    function showWindAtLocation(wind, product) {
-        var unitToggle = createUnitToggle("#location-wind-units", product), units = unitToggle.value();
-        d3.select("#location-wind").text(µ.formatVector(wind, units));
-        d3.select("#location-wind-units").text(units.label).on("click", function() {
-            unitToggle.next();
-            showWindAtLocation(wind, product);
-        });
     }
 
     /**
@@ -806,19 +744,6 @@
             d3.select("#location-coord").text(µ.formatCoordinates(λ, φ));
             d3.select("#location-close").classed("invisible", false);
         }
-
-        if (field.isDefined(point[0], point[1]) && grids) {
-            var wind = grids.primaryGrid.interpolate(λ, φ);
-            if (µ.isValue(wind)) {
-                showWindAtLocation(wind, grids.primaryGrid);
-            }
-            if (grids.overlayGrid !== grids.primaryGrid) {
-                var value = grids.overlayGrid.interpolate(λ, φ);
-                if (µ.isValue(value)) {
-                    showOverlayValueAtLocation(value, grids.overlayGrid);
-                }
-            }
-        }
     }
 
     function updateLocationDetails() {
@@ -828,10 +753,6 @@
     function clearLocationDetails(clearEverything) {
         d3.select("#location-coord").text("");
         d3.select("#location-close").classed("invisible", true);
-        d3.select("#location-wind").text("");
-        d3.select("#location-wind-units").text("");
-        d3.select("#location-value").text("");
-        d3.select("#location-value-units").text("");
         if (clearEverything) {
             activeLocation = {};
             d3.select(".location-mark").remove();
@@ -877,29 +798,7 @@
     function init() {
         report.status("Initializing...");
 
-        d3.select("#sponsor-link")
-            .attr("target", µ.isEmbeddedInIFrame() ? "_new" : null)
-            .on("click", reportSponsorClick.bind(null, "click"))
-            .on("contextmenu", reportSponsorClick.bind(null, "right-click"))
-        d3.select("#sponsor-hide").on("click", function() {
-            d3.select("#sponsor").classed("invisible", true);
-        });
-
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
-        // Adjust size of the scale canvas to fill the width of the menu to the right of the label.
-        var label = d3.select("#scale-label").node();
-        d3.select("#scale")
-            .attr("width", (d3.select("#menu").node().offsetWidth - label.offsetWidth) * 0.97)
-            .attr("height", label.offsetHeight / 2);
-
-        d3.select("#show-menu").on("click", function() {
-            if (µ.isEmbeddedInIFrame()) {
-                window.open("http://earth.nullschool.net/" + window.location.hash, "_blank");
-            }
-            else {
-                d3.select("#menu").classed("invisible", !d3.select("#menu").classed("invisible"));
-            }
-        });
 
         if (µ.isFF()) {
             // Workaround FF performance issue of slow click behavior on map having thick coastlines.
@@ -961,10 +860,6 @@
         gridAgent.on("update", function(grids) {
             showGridDetails(grids);
         });
-        d3.select("#toggle-zone").on("click", function() {
-            d3.select("#data-date").classed("local", !d3.select("#data-date").classed("local"));
-            showDate(gridAgent.cancel.requested ? null : gridAgent.value());
-        });
 
         function startRendering() {
             rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
@@ -1008,105 +903,7 @@
         inputController.on("click", showLocationDetails);
         fieldAgent.on("update", updateLocationDetails);
         d3.select("#location-close").on("click", _.partial(clearLocationDetails, true));
-
-        // Modify menu depending on what mode we're in.
-        configuration.on("change:param", function(context, mode) {
-            d3.selectAll(".ocean-mode").classed("invisible", mode !== "ocean");
-            d3.selectAll(".wind-mode").classed("invisible", mode !== "wind");
-            switch (mode) {
-                case "wind":
-                    d3.select("#nav-backward-more").attr("title", "-1 Day");
-                    d3.select("#nav-backward").attr("title", "-3 Hours");
-                    d3.select("#nav-forward").attr("title", "+3 Hours");
-                    d3.select("#nav-forward-more").attr("title", "+1 Day");
-                    break;
-                case "ocean":
-                    d3.select("#nav-backward-more").attr("title", "-1 Month");
-                    d3.select("#nav-backward").attr("title", "-5 Days");
-                    d3.select("#nav-forward").attr("title", "+5 Days");
-                    d3.select("#nav-forward-more").attr("title", "+1 Month");
-                    break;
-            }
-        });
-
-        // Add handlers for mode buttons.
-        d3.select("#wind-mode-enable").on("click", function() {
-            if (configuration.get("param") !== "wind") {
-                configuration.save({param: "wind", surface: "surface", level: "level", overlayType: "default"});
-            }
-        });
-        configuration.on("change:param", function(x, param) {
-            d3.select("#wind-mode-enable").classed("highlighted", param === "wind");
-        });
-        d3.select("#ocean-mode-enable").on("click", function() {
-            if (configuration.get("param") !== "ocean") {
-                // When switching between modes, there may be no associated data for the current date. So we need
-                // find the closest available according to the catalog. This is not necessary if date is "current".
-                // UNDONE: this code is annoying. should be easier to get date for closest ocean product.
-                var ocean = {param: "ocean", surface: "surface", level: "currents", overlayType: "default"};
-                var attr = _.clone(configuration.attributes);
-                if (attr.date === "current") {
-                    configuration.save(ocean);
-                }
-                else {
-                    when.all(products.productsFor(_.extend(attr, ocean))).spread(function(product) {
-                        if (product.date) {
-                            configuration.save(_.extend(ocean, µ.dateToConfig(product.date)));
-                        }
-                    }).otherwise(report.error);
-                }
-                stopCurrentAnimation(true);  // cleanup particle artifacts over continents
-            }
-        });
-        configuration.on("change:param", function(x, param) {
-            d3.select("#ocean-mode-enable").classed("highlighted", param === "ocean");
-        });
-
-        // Add logic to disable buttons that are incompatible with each other.
-        configuration.on("change:overlayType", function(x, ot) {
-            d3.select("#surface-level").classed("disabled", ot === "air_density" || ot === "wind_power_density");
-        });
-        configuration.on("change:surface", function(x, s) {
-            d3.select("#overlay-air_density").classed("disabled", s === "surface");
-            d3.select("#overlay-wind_power_density").classed("disabled", s === "surface");
-        });
-
-        // Add event handlers for the time navigation buttons.
-        d3.select("#nav-backward-more").on("click", navigate.bind(null, -10));
-        d3.select("#nav-forward-more" ).on("click", navigate.bind(null, +10));
-        d3.select("#nav-backward"     ).on("click", navigate.bind(null, -1));
-        d3.select("#nav-forward"      ).on("click", navigate.bind(null, +1));
-        d3.select("#nav-now").on("click", function() { configuration.save({date: "current", hour: ""}); });
-
-        d3.select("#option-show-grid").on("click", function() {
-            configuration.save({showGridPoints: !configuration.get("showGridPoints")});
-        });
-        configuration.on("change:showGridPoints", function(x, showGridPoints) {
-            d3.select("#option-show-grid").classed("highlighted", showGridPoints);
-        });
-
-        // Add handlers for all wind level buttons.
-        d3.selectAll(".surface").each(function() {
-            var id = this.id, parts = id.split("-");
-            bindButtonToConfiguration("#" + id, {param: "wind", surface: parts[0], level: parts[1]});
-        });
-
-        // Add handlers for ocean animation types.
-        bindButtonToConfiguration("#animate-currents", {param: "ocean", surface: "surface", level: "currents"});
-
-        // Add handlers for all overlay buttons.
-        products.overlayTypes.forEach(function(type) {
-            bindButtonToConfiguration("#overlay-" + type, {overlayType: type});
-        });
-        bindButtonToConfiguration("#overlay-wind", {param: "wind", overlayType: "default"});
-        bindButtonToConfiguration("#overlay-ocean-off", {overlayType: "off"});
-        bindButtonToConfiguration("#overlay-currents", {overlayType: "default"});
-
-        // Add handlers for all projection buttons.
-        globes.keys().forEach(function(p) {
-            bindButtonToConfiguration("#" + p, {projection: p, orientation: ""}, ["projection"]);
-        });
-
+		
         // When touch device changes between portrait and landscape, rebuild globe using the new view size.
         d3.select(window).on("orientationchange", function() {
             view = µ.view();
