@@ -31,10 +31,10 @@
     var COMPLETED = "▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪";   // glyphs for completed progress bar
 
     var hostElement = document.getElementById('earthContainer');
-	var view = {
-		width: hostElement.offsetWidth,
-		height: hostElement.offsetHeight
-	};
+    var view = {
+		    width: hostElement.offsetWidth,
+        height: hostElement.offsetHeight
+    };
     var log = µ.log();
 
     /**
@@ -52,7 +52,7 @@
                     case -1: msg = "Server Down"; break;
                     case 404: msg = "No Data"; break;
                 }
-				
+
                 log.error(err);
                 return s.classed("bad", true).text(msg);
             },
@@ -814,7 +814,7 @@
 			.attr('id', 'foreground')
 			.attr('class', 'fill-screen');
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
-		
+
         if (µ.isFF()) {
             // Workaround FF performance issue of slow click behavior on map having thick coastlines.
             d3.select("#display").classed("firefox", true);
@@ -912,7 +912,7 @@
         inputController.on("click", showLocationDetails);
         fieldAgent.on("update", updateLocationDetails);
         d3.select("#location-close").on("click", _.partial(clearLocationDetails, true));
-		
+
         // When touch device changes between portrait and landscape, rebuild globe using the new view size.
         d3.select(window).on("orientationchange", function() {
             view = µ.view();
