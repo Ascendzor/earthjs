@@ -801,9 +801,20 @@
      */
     function init() {
         report.status("Initializing...");
-
+		d3.select('#earthContainer').append('svg')
+			.attr('class', 'fill-screen')
+			.attr('id', 'map');
+		d3.select('#earthContainer').append('canvas')
+			.attr('id', 'animation')
+			.attr('class', 'fill-screen');
+		d3.select('#earthContainer').append('canvas')
+			.attr('id', 'overlay')
+			.attr('class', 'fill-screen');
+		d3.select('#earthContainer').append('svg')
+			.attr('id', 'foreground')
+			.attr('class', 'fill-screen');
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
-
+		
         if (µ.isFF()) {
             // Workaround FF performance issue of slow click behavior on map having thick coastlines.
             d3.select("#display").classed("firefox", true);
@@ -816,12 +827,6 @@
         else {
             d3.select(document.documentElement).classed("no-touch", true);  // to filter styles problematic for touch
         }
-
-        // Bind configuration to URL bar changes.
-        d3.select(window).on("hashchange", function() {
-            log.debug("hashchange");
-            configuration.fetch({trigger: "hashchange"});
-        });
 
         configuration.on("change", report.reset);
 
