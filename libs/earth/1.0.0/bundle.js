@@ -7,7 +7,7 @@
  *
  * https://github.com/cambecc/earth
  */
-(function() {
+module.exports = function() {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
     var products = require('./products.js');
@@ -932,9 +932,9 @@
 
     when(true).then(init).then(start).otherwise(report.error);
 
-})();
+};
 
-},{"./globes.js":2,"./micro.js":3,"./products.js":4}],2:[function(require,module,exports){
+},{"./globes.js":2,"./micro.js":3,"./products.js":5}],2:[function(require,module,exports){
 /**
  * globes - a set of models of the earth, each having their own kind of projection and onscreen behavior.
  *
@@ -1952,6 +1952,10 @@ module.exports = function() {
 };
 
 },{}],4:[function(require,module,exports){
+var planet = require('./earth.js');
+planet();
+
+},{"./earth.js":1}],5:[function(require,module,exports){
 /**
  * products - defines the behavior of weather data grids, including grid construction, interpolation, and color scales.
  *
@@ -2651,4 +2655,4 @@ module.exports = function() {
 
 }();
 
-},{"./micro.js":3}]},{},[1]);
+},{"./micro.js":3}]},{},[4]);

@@ -6,7 +6,7 @@
  *
  * https://github.com/cambecc/earth
  */
-(function() {
+module.exports = function() {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
     var products = require('./products.js');
@@ -931,4 +931,4 @@
 
     when(true).then(init).then(start).otherwise(report.error);
 
-})();
+};
