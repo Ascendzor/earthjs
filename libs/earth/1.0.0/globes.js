@@ -6,8 +6,10 @@
  *
  * https://github.com/cambecc/earth
  */
-var globes = function() {
+module.exports = function() {
     "use strict";
+
+    var µ = require('./micro.js')();
 
     /**
      * @returns {Array} rotation of globe to current position of the user. Aside from asking for geolocation,
@@ -349,4 +351,4 @@ var globes = function() {
         winkel3: winkel3
     });
 
-}();
+};

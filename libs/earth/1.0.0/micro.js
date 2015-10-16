@@ -6,7 +6,7 @@
  *
  * https://github.com/cambecc/earth
  */
-var µ = function() {
+module.exports = function() {
     "use strict";
 
     var τ = 2 * Math.PI;
@@ -656,4 +656,4 @@ var µ = function() {
         buildConfiguration: buildConfiguration
     };
 
-}();
+};

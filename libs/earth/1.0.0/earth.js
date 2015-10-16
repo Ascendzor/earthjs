@@ -7,7 +7,10 @@
  * https://github.com/cambecc/earth
  */
 (function() {
-
+    var µ = require('./micro.js')();
+    var globes = require('./globes.js')();
+    var products = require('./products.js');
+    console.log(µ);
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
     var HOUR = 60 * MINUTE;
@@ -76,6 +79,7 @@
 
     // Construct the page's main internal components:
 
+      console.log('globes not defined here?');
     var configuration =
         µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
