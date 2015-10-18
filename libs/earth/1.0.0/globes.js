@@ -11,6 +11,7 @@ module.exports = function() {
 
     var µ = require('./micro.js')();
     var _ = require('lodash');
+    var d3 = require('d3');
 
     /**
      * @returns {Array} rotation of globe to current position of the user. Aside from asking for geolocation,

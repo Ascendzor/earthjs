@@ -12,6 +12,8 @@ module.exports = function() {
     var products = require('./products.js');
     var _ = require('lodash');
     var Backbone = require('backbone');
+    var topojson = require('topojson');
+    var d3 = require('d3');
 
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
