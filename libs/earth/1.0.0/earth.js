@@ -6,7 +6,7 @@
  *
  * https://github.com/cambecc/earth
  */
-module.exports = function(container) {
+module.exports = function(containerId) {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
     var when = require('./when.js')();
@@ -38,7 +38,7 @@ module.exports = function(container) {
     var REMAINING = "▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫";   // glyphs for remaining progress bar
     var COMPLETED = "▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪";   // glyphs for completed progress bar
 
-    var hostElement = container;
+    var hostElement = document.getElementById(containerId);
     var view = {
 		    width: hostElement.offsetWidth,
         height: hostElement.offsetHeight
@@ -778,16 +778,16 @@ module.exports = function(container) {
      */
     function init() {
         report.status("Initializing...");
-		d3.select('#earthContainer').append('svg')
+		d3.select(containerId).append('svg')
 			.attr('class', 'fill-screen')
 			.attr('id', 'map');
-		d3.select('#earthContainer').append('canvas')
+		d3.select(containerId).append('canvas')
 			.attr('id', 'animation')
 			.attr('class', 'fill-screen');
-		d3.select('#earthContainer').append('canvas')
+		d3.select(containerId).append('canvas')
 			.attr('id', 'overlay')
 			.attr('class', 'fill-screen');
-		d3.select('#earthContainer').append('svg')
+		d3.select(containerId).append('svg')
 			.attr('id', 'foreground')
 			.attr('class', 'fill-screen');
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);

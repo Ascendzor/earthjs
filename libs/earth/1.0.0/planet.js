@@ -1,4 +1,4 @@
 var planet = require('./earth.js');
-module.exports = function(container) {
-  planet(container);
+module.exports = function(containerId) {
+  planet(containerId);
 }
