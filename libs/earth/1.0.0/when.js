@@ -13,8 +13,7 @@
  *
  * modified by @cambecc to work as-in in the browser
  */
-when = function(define, global) { 'use strict';
-return define(function () {
+module.exports = function () {
 
 	// Public API
 
@@ -950,8 +949,4 @@ return define(function () {
 	}
 
 	return when;
-});
-}(
-    function (factory) { return factory(); },
-	this
-);
+}

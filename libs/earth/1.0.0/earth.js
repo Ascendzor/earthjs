@@ -9,6 +9,7 @@
 module.exports = function() {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
+    var when = require('./when.js')();
     var products = require('./products.js');
     var _ = require('lodash');
     var Backbone = require('backbone');

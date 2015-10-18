@@ -9,6 +9,7 @@
 module.exports = function() {
     "use strict";
     var µ = require('./micro.js')();
+    var when = require('./when.js')();
     var Backbone = require('backbone');
     var _ = require('lodash');
     var WEATHER_PATH = "/data/weather";
