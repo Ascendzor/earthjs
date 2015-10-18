@@ -1,8 +1,16 @@
 {
   "name": "interactive-earth",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "An interactive earth",
   "license": "MIT",
-  "main": "bundle.js",
-  "author": "Troy Mare <wow.troymare@gmail.com"
+  "main": "planet.js",
+  "author": "Troy Mare <wow.troymare@gmail.com",
+  "dependencies": {
+    "backbone": "1.2.3",
+    "d3": "3.5.6",
+    "jquery": "2.1.4",
+    "lodash": "3.10.1",
+    "underscore": "1.8.3",
+    "topojson": "1.6.19"
+  }
 }
