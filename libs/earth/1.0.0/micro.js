@@ -8,7 +8,8 @@
  */
 module.exports = function() {
     "use strict";
-
+    var Backbone = require('backbone');
+    var _ = require('lodash');
     var τ = 2 * Math.PI;
     var H = 0.0000360;  // 0.0000360°φ ~= 4m
     var DEFAULT_CONFIG = "current/wind/surface/level/orthographic";

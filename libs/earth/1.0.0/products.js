@@ -9,8 +9,8 @@
 module.exports = function() {
     "use strict";
     var µ = require('./micro.js')();
-    console.log('inside products');
-    console.log(µ);
+    var Backbone = require('backbone');
+    var _ = require('lodash');
     var WEATHER_PATH = "/data/weather";
     var OSCAR_PATH = "/data/oscar";
     var catalogs = {

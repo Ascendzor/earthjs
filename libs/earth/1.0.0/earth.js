@@ -10,7 +10,9 @@ module.exports = function() {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
     var products = require('./products.js');
-    console.log(µ);
+    var _ = require('lodash');
+    var Backbone = require('backbone');
+
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
     var HOUR = 60 * MINUTE;
