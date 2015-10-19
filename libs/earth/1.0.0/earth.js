@@ -170,6 +170,7 @@ module.exports = function(containerId) {
      */
     function buildMesh(resource) {
         var cancel = this.cancel;
+        console.log(resource);
         return µ.loadJson(resource).then(function(topo) {
             if (cancel.requested) return null;
             var o = topo.objects;
