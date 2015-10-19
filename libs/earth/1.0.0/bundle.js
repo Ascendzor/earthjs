@@ -7,7 +7,7 @@
  *
  * https://github.com/cambecc/earth
  */
-module.exports = function(container) {
+module.exports = function(containerId) {
     var µ = require('./micro.js')();
     var globes = require('./globes.js')();
     var when = require('./when.js')();
@@ -39,7 +39,7 @@ module.exports = function(container) {
     var REMAINING = "▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫▫";   // glyphs for remaining progress bar
     var COMPLETED = "▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪";   // glyphs for completed progress bar
 
-    var hostElement = container;
+    var hostElement = document.getElementById(containerId);
     var view = {
 		    width: hostElement.offsetWidth,
         height: hostElement.offsetHeight
@@ -68,7 +68,6 @@ module.exports = function(container) {
 
     // Construct the page's main internal components:
 
-      console.log('globes not defined here?');
     var configuration =
         µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
@@ -160,7 +159,7 @@ module.exports = function(container) {
             }
         }, MOVE_END_WAIT);  // wait for a bit to decide if user has stopped moving the globe
 
-        d3.select("#display").call(zoom);
+        d3.select(hostElement).call(zoom);
 
         function reorient() {
             var options = arguments[3] || {};
@@ -779,23 +778,23 @@ module.exports = function(container) {
      */
     function init() {
         report.status("Initializing...");
-		d3.select('#earthContainer').append('svg')
+		d3.select(hostElement).append('svg')
 			.attr('class', 'fill-screen')
 			.attr('id', 'map');
-		d3.select('#earthContainer').append('canvas')
+		d3.select(hostElement).append('canvas')
 			.attr('id', 'animation')
 			.attr('class', 'fill-screen');
-		d3.select('#earthContainer').append('canvas')
+		d3.select(hostElement).append('canvas')
 			.attr('id', 'overlay')
 			.attr('class', 'fill-screen');
-		d3.select('#earthContainer').append('svg')
+		d3.select(hostElement).append('svg')
 			.attr('id', 'foreground')
 			.attr('class', 'fill-screen');
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
 
         if (µ.isFF()) {
             // Workaround FF performance issue of slow click behavior on map having thick coastlines.
-            d3.select("#display").classed("firefox", true);
+            d3.select(hostElement).classed("firefox", true);
         }
 
         // Tweak document to distinguish CSS styling between touch and non-touch environments. Hacky hack.
@@ -36986,10 +36985,12 @@ return jQuery;
 
 },{}],10:[function(require,module,exports){
 var planet = require('./earth.js');
-planet(document.getElementById('earthContainer'));
-module.exports = function(container) {
-  planet(document.getElementById('earthContainer'));
+module.exports = function(containerId) {
+  planet(containerId);
 }
+
+//delete This
+planet('earthContainer');
 
 },{"./earth.js":1}],11:[function(require,module,exports){
 /**
