@@ -43,26 +43,9 @@ module.exports = function(containerId) {
 		    width: hostElement.offsetWidth,
         height: hostElement.offsetHeight
     };
-    var log = µ.log();
-
-    /**
-     * An object to display various types of messages to the user.
-     */
-    var report = function() {
-        return {
-            status: function(msg) {
-            },
-            error: function(err) {
-            },
-            reset: function() {
-            },
-            progress: function(amount) {
-            }
-        };
-    }();
 
     function newAgent() {
-        return µ.newAgent().on({"reject": report.error, "fail": report.error});
+        return µ.newAgent().on({"reject": function() { console('rejected'); }, "fail": function() { console.log('failed'); }});
     }
 
     // Construct the page's main internal components:
@@ -192,16 +175,15 @@ module.exports = function(containerId) {
      */
     function buildMesh(resource) {
         var cancel = this.cancel;
-        report.status("Downloading...");
         return µ.loadJson(resource).then(function(topo) {
             if (cancel.requested) return null;
-            log.time("building meshes");
+            console.log("building meshes");
             var o = topo.objects;
             var coastLo = topojson.feature(topo, µ.isMobile() ? o.coastline_tiny : o.coastline_110m);
             var coastHi = topojson.feature(topo, µ.isMobile() ? o.coastline_110m : o.coastline_50m);
             var lakesLo = topojson.feature(topo, µ.isMobile() ? o.lakes_tiny : o.lakes_110m);
             var lakesHi = topojson.feature(topo, µ.isMobile() ? o.lakes_110m : o.lakes_50m);
-            log.timeEnd("building meshes");
+            console.log("building meshes");
             return {
                 coastLo: coastLo,
                 coastHi: coastHi,
@@ -227,8 +209,7 @@ module.exports = function(containerId) {
     var downloadsInProgress = 0;
 
     function buildGrids() {
-        report.status("Downloading...");
-        log.time("build grids");
+        console.log("build grids");
         // UNDONE: upon failure to load a product, the unloaded product should still be stored in the agent.
         //         this allows us to use the product for navigation and other state.
         var cancel = this.cancel;
@@ -237,7 +218,7 @@ module.exports = function(containerId) {
             return product.load(cancel);
         });
         return when.all(loaded).then(function(products) {
-            log.time("build grids");
+            console.log("build grids");
             return {primaryGrid: products[0], overlayGrid: products[1] || products[0]};
         }).ensure(function() {
             downloadsInProgress--;
@@ -249,7 +230,7 @@ module.exports = function(containerId) {
      */
     function navigate(step) {
         if (downloadsInProgress > 0) {
-            log.debug("Download in progress--ignoring nav request.");
+            console.log("Download in progress--ignoring nav request.");
             return;
         }
         var next = gridAgent.value().primaryGrid.navigate(step);
@@ -261,8 +242,7 @@ module.exports = function(containerId) {
     function buildRenderer(mesh, globe) {
         if (!mesh || !globe) return null;
 
-        report.status("Rendering Globe...");
-        log.time("rendering map");
+        console.log("rendering map");
 
         // UNDONE: better way to do the following?
         var dispatch = _.clone(Backbone.Events);
@@ -339,14 +319,14 @@ module.exports = function(containerId) {
             inputController.globe(globe);
         });
 
-        log.timeEnd("rendering map");
+        console.log("rendering map");
         return "ready";
     }
 
     function createMask(globe) {
         if (!globe) return null;
 
-        log.time("render mask");
+        console.log("render mask");
 
         // Create a detached canvas, ask the model to define the mask polygon, then fill with an opaque color.
         var width = view.width, height = view.height;
@@ -357,7 +337,7 @@ module.exports = function(containerId) {
 
         var imageData = context.getImageData(0, 0, width, height);
         var data = imageData.data;  // layout: [r, g, b, a, r, g, b, a, ...]
-        log.timeEnd("render mask");
+        console.log("render mask");
         return {
             imageData: imageData,
             isVisible: function(x, y) {
@@ -447,7 +427,7 @@ module.exports = function(containerId) {
         var primaryGrid = grids.primaryGrid;
         var overlayGrid = grids.overlayGrid;
 
-        log.time("interpolating field");
+        console.log("interpolating field");
         var d = when.defer(), cancel = this.cancel;
 
         var projection = globe.projection;
@@ -495,8 +475,6 @@ module.exports = function(containerId) {
             columns[x+1] = columns[x] = column;
         }
 
-        report.status("");
-
         (function batchInterpolate() {
             try {
                 if (!cancel.requested) {
@@ -506,7 +484,6 @@ module.exports = function(containerId) {
                         x += 2;
                         if ((Date.now() - start) > MAX_TASK_TIME) {
                             // Interpolation is taking too long. Schedule the next batch for later and yield.
-                            report.progress((x - bounds.x) / (bounds.xMax - bounds.x));
                             setTimeout(batchInterpolate, MIN_SLEEP_TIME);
                             return;
                         }
@@ -517,8 +494,7 @@ module.exports = function(containerId) {
             catch (e) {
                 d.reject(e);
             }
-            report.progress(1);  // 100% complete
-            log.timeEnd("interpolating field");
+            console.log("interpolating field");
         })();
 
         return d.promise;
@@ -538,7 +514,7 @@ module.exports = function(containerId) {
         }
         var fadeFillStyle = µ.isFF() ? "rgba(0, 0, 0, 0.95)" : "rgba(0, 0, 0, 0.97)";  // FF Mac alpha behaves oddly
 
-        log.debug("particle count: " + particleCount);
+        console.log("particle count: " + particleCount);
         var particles = [];
         for (var i = 0; i < particleCount; i++) {
             particles.push(field.randomize({age: _.random(0, MAX_PARTICLE_AGE)}));
@@ -614,7 +590,7 @@ module.exports = function(containerId) {
                 setTimeout(frame, FRAME_RATE);
             }
             catch (e) {
-                report.error(e);
+                console.log(e);
             }
         })();
     }
@@ -765,18 +741,11 @@ module.exports = function(containerId) {
         });
     }
 
-    function reportSponsorClick(type) {
-        if (ga) {
-            ga("send", "event", "sponsor", type);
-        }
-    }
-
     /**
      * Registers all event handlers to bind components and page elements together. There must be a cleaner
      * way to accomplish this...
      */
     function init() {
-        report.status("Initializing...");
 		d3.select(hostElement).append('svg')
 			.attr('class', 'fill-screen')
 			.attr('id', 'map');
@@ -803,8 +772,6 @@ module.exports = function(containerId) {
         else {
             d3.select(document.documentElement).classed("no-touch", true);  // to filter styles problematic for touch
         }
-
-        configuration.on("change", report.reset);
 
         meshAgent.listenTo(configuration, "change:topology", function(context, attr) {
             meshAgent.submit(buildMesh, attr);
@@ -900,6 +867,6 @@ module.exports = function(containerId) {
         configuration.fetch();
     }
 
-    when(true).then(init).then(start).otherwise(report.error);
+    when(true).then(init).then(start);
 
 };
