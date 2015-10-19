@@ -67,7 +67,6 @@ module.exports = function(containerId) {
 
     // Construct the page's main internal components:
 
-      console.log('globes not defined here?');
     var configuration =
         µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
@@ -121,7 +120,6 @@ module.exports = function(containerId) {
                 op = op || newOp(d3.mouse(this), zoom.scale());  // a new operation begins
             })
             .on("zoom", function() {
-              console.log('zooming');
                 var currentMouse = d3.mouse(this), currentScale = d3.event.scale;
                 op = op || newOp(currentMouse, 1);  // Fix bug on some browsers where zoomstart fires out of order.
                 if (op.type === "click" || op.type === "spurious") {
@@ -779,16 +777,16 @@ module.exports = function(containerId) {
      */
     function init() {
         report.status("Initializing...");
-		d3.select(containerId).append('svg')
+		d3.select(hostElement).append('svg')
 			.attr('class', 'fill-screen')
 			.attr('id', 'map');
-		d3.select(containerId).append('canvas')
+		d3.select(hostElement).append('canvas')
 			.attr('id', 'animation')
 			.attr('class', 'fill-screen');
-		d3.select(containerId).append('canvas')
+		d3.select(hostElement).append('canvas')
 			.attr('id', 'overlay')
 			.attr('class', 'fill-screen');
-		d3.select(containerId).append('svg')
+		d3.select(hostElement).append('svg')
 			.attr('id', 'foreground')
 			.attr('class', 'fill-screen');
         d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
