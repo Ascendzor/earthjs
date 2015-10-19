@@ -121,6 +121,7 @@ module.exports = function(containerId) {
                 op = op || newOp(d3.mouse(this), zoom.scale());  // a new operation begins
             })
             .on("zoom", function() {
+              console.log('zooming');
                 var currentMouse = d3.mouse(this), currentScale = d3.event.scale;
                 op = op || newOp(currentMouse, 1);  // Fix bug on some browsers where zoomstart fires out of order.
                 if (op.type === "click" || op.type === "spurious") {
@@ -159,7 +160,7 @@ module.exports = function(containerId) {
             }
         }, MOVE_END_WAIT);  // wait for a bit to decide if user has stopped moving the globe
 
-        d3.select("#display").call(zoom);
+        d3.select(hostElement).call(zoom);
 
         function reorient() {
             var options = arguments[3] || {};
@@ -794,7 +795,7 @@ module.exports = function(containerId) {
 
         if (µ.isFF()) {
             // Workaround FF performance issue of slow click behavior on map having thick coastlines.
-            d3.select("#display").classed("firefox", true);
+            d3.select(hostElement).classed("firefox", true);
         }
 
         // Tweak document to distinguish CSS styling between touch and non-touch environments. Hacky hack.
