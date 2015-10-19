@@ -3,5 +3,6 @@ module.exports = function(containerId) {
   planet(containerId);
 }
 
-//delete This
-planet('earthContainer');
+//delete this
+planet('earthContainer2');
+//delete that

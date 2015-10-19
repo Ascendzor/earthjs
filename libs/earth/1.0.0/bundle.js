@@ -46,21 +46,16 @@ module.exports = function(containerId) {
     };
 
     function newAgent() {
-        return µ.newAgent().on({"reject": function() { console('rejected'); }, "fail": function() { console.log('failed'); }});
+        return µ.newAgent();
     }
 
     // Construct the page's main internal components:
 
-    var configuration =
-        µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
+    var configuration = µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
     var meshAgent = newAgent();      // map data for the earth
     var globeAgent = newAgent();     // the model of the globe
-    var gridAgent = newAgent();      // the grid of weather data
     var rendererAgent = newAgent();  // the globe SVG renderer
-    var fieldAgent = newAgent();     // the interpolated wind vector field
-    var animatorAgent = newAgent();  // the wind animator
-    var overlayAgent = newAgent();   // color overlay over the animation
 
     /**
      * The input controller is an object that translates move operations (drag and/or zoom) into mutations of the
@@ -178,13 +173,11 @@ module.exports = function(containerId) {
         var cancel = this.cancel;
         return µ.loadJson(resource).then(function(topo) {
             if (cancel.requested) return null;
-            console.log("building meshes");
             var o = topo.objects;
             var coastLo = topojson.feature(topo, µ.isMobile() ? o.coastline_tiny : o.coastline_110m);
             var coastHi = topojson.feature(topo, µ.isMobile() ? o.coastline_110m : o.coastline_50m);
             var lakesLo = topojson.feature(topo, µ.isMobile() ? o.lakes_tiny : o.lakes_110m);
             var lakesHi = topojson.feature(topo, µ.isMobile() ? o.lakes_110m : o.lakes_50m);
-            console.log("building meshes");
             return {
                 coastLo: coastLo,
                 coastHi: coastHi,
@@ -208,9 +201,7 @@ module.exports = function(containerId) {
 
     // Some hacky stuff to ensure only one download can be in progress at a time.
     var downloadsInProgress = 0;
-
     function buildGrids() {
-        console.log("build grids");
         // UNDONE: upon failure to load a product, the unloaded product should still be stored in the agent.
         //         this allows us to use the product for navigation and other state.
         var cancel = this.cancel;
@@ -219,7 +210,6 @@ module.exports = function(containerId) {
             return product.load(cancel);
         });
         return when.all(loaded).then(function(products) {
-            console.log("build grids");
             return {primaryGrid: products[0], overlayGrid: products[1] || products[0]};
         }).ensure(function() {
             downloadsInProgress--;
@@ -233,10 +223,6 @@ module.exports = function(containerId) {
         if (downloadsInProgress > 0) {
             console.log("Download in progress--ignoring nav request.");
             return;
-        }
-        var next = gridAgent.value().primaryGrid.navigate(step);
-        if (next) {
-            configuration.save(µ.dateToConfig(next));
         }
     }
 
@@ -262,27 +248,6 @@ module.exports = function(containerId) {
         var coastline = d3.select(".coastline");
         var lakes = d3.select(".lakes");
         d3.selectAll("path").attr("d", path);  // do an initial draw -- fixes issue with safari
-
-        function drawLocationMark(point, coord) {
-            // show the location on the map if defined
-            if (fieldAgent.value() && !fieldAgent.value().isInsideBoundary(point[0], point[1])) {
-                // UNDONE: Sometimes this is invoked on an old, released field, because new one has not been
-                //         built yet, causing the mark to not get drawn.
-                return;  // outside the field boundary, so ignore.
-            }
-            if (coord && _.isFinite(coord[0]) && _.isFinite(coord[1])) {
-                var mark = d3.select(".location-mark");
-                if (!mark.node()) {
-                    mark = d3.select("#foreground").append("path").attr("class", "location-mark");
-                }
-                mark.datum({type: "Point", coordinates: coord}).attr("d", path);
-            }
-        }
-
-        // Draw the location mark if one is currently visible.
-        if (activeLocation.point && activeLocation.coord) {
-            drawLocationMark(activeLocation.point, activeLocation.coord);
-        }
 
         // Throttled draw method helps with slow devices that would get overwhelmed by too many redraw events.
         var REDRAW_WAIT = 5;  // milliseconds
@@ -311,7 +276,9 @@ module.exports = function(containerId) {
                     d3.selectAll("path").attr("d", path);
                     rendererAgent.trigger("render");
                 },
-                click: drawLocationMark
+                click: function() {
+                  console.log('you clicked');
+                }
             });
 
         // Finally, inject the globe model into the input controller. Do it on the next event turn to ensure
@@ -320,14 +287,11 @@ module.exports = function(containerId) {
             inputController.globe(globe);
         });
 
-        console.log("rendering map");
         return "ready";
     }
 
     function createMask(globe) {
         if (!globe) return null;
-
-        console.log("render mask");
 
         // Create a detached canvas, ask the model to define the mask polygon, then fill with an opaque color.
         var width = view.width, height = view.height;
@@ -501,100 +465,6 @@ module.exports = function(containerId) {
         return d.promise;
     }
 
-    function animate(globe, field, grids) {
-        if (!globe || !field || !grids) return;
-
-        var cancel = this.cancel;
-        var bounds = globe.bounds(view);
-        // maxIntensity is the velocity at which particle color intensity is maximum
-        var colorStyles = µ.windIntensityColorScale(INTENSITY_SCALE_STEP, grids.primaryGrid.particles.maxIntensity);
-        var buckets = colorStyles.map(function() { return []; });
-        var particleCount = Math.round(bounds.width * PARTICLE_MULTIPLIER);
-        if (µ.isMobile()) {
-            particleCount *= PARTICLE_REDUCTION;
-        }
-        var fadeFillStyle = µ.isFF() ? "rgba(0, 0, 0, 0.95)" : "rgba(0, 0, 0, 0.97)";  // FF Mac alpha behaves oddly
-
-        console.log("particle count: " + particleCount);
-        var particles = [];
-        for (var i = 0; i < particleCount; i++) {
-            particles.push(field.randomize({age: _.random(0, MAX_PARTICLE_AGE)}));
-        }
-
-        function evolve() {
-            buckets.forEach(function(bucket) { bucket.length = 0; });
-            particles.forEach(function(particle) {
-                if (particle.age > MAX_PARTICLE_AGE) {
-                    field.randomize(particle).age = 0;
-                }
-                var x = particle.x;
-                var y = particle.y;
-                var v = field(x, y);  // vector at current position
-                var m = v[2];
-                if (m === null) {
-                    particle.age = MAX_PARTICLE_AGE;  // particle has escaped the grid, never to return...
-                }
-                else {
-                    var xt = x + v[0];
-                    var yt = y + v[1];
-                    if (field.isDefined(xt, yt)) {
-                        // Path from (x,y) to (xt,yt) is visible, so add this particle to the appropriate draw bucket.
-                        particle.xt = xt;
-                        particle.yt = yt;
-                        buckets[colorStyles.indexFor(m)].push(particle);
-                    }
-                    else {
-                        // Particle isn't visible, but it still moves through the field.
-                        particle.x = xt;
-                        particle.y = yt;
-                    }
-                }
-                particle.age += 1;
-            });
-        }
-
-        var g = d3.select("#animation").node().getContext("2d");
-        g.lineWidth = PARTICLE_LINE_WIDTH;
-        g.fillStyle = fadeFillStyle;
-
-        function draw() {
-            // Fade existing particle trails.
-            var prev = g.globalCompositeOperation;
-            g.globalCompositeOperation = "destination-in";
-            g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-            g.globalCompositeOperation = prev;
-
-            // Draw new particle trails.
-            buckets.forEach(function(bucket, i) {
-                if (bucket.length > 0) {
-                    g.beginPath();
-                    g.strokeStyle = colorStyles[i];
-                    bucket.forEach(function(particle) {
-                        g.moveTo(particle.x, particle.y);
-                        g.lineTo(particle.xt, particle.yt);
-                        particle.x = particle.xt;
-                        particle.y = particle.yt;
-                    });
-                    g.stroke();
-                }
-            });
-        }
-
-        (function frame() {
-            try {
-                if (cancel.requested) {
-                    field.release();
-                    return;
-                }
-                evolve();
-                draw();
-                setTimeout(frame, FRAME_RATE);
-            }
-            catch (e) {
-                console.log(e);
-            }
-        })();
-    }
 
     function drawGridPoints(ctx, grid, globe) {
         if (!grid || !globe || !configuration.get("showGridPoints")) return;
@@ -611,20 +481,6 @@ module.exports = function(containerId) {
                 stream.point(λ, φ);
             }
         });
-    }
-
-    function drawOverlay(field, overlayType) {
-        if (!field) return;
-
-        var ctx = d3.select("#overlay").node().getContext("2d"), grid = (gridAgent.value() || {}).overlayGrid;
-
-        µ.clearCanvas(d3.select("#overlay").node());
-        if (overlayType) {
-            if (overlayType !== "off") {
-                ctx.putImageData(field.overlay, 0, 0);
-            }
-            drawGridPoints(ctx, grid, globeAgent.value());
-        }
     }
 
     /**
@@ -696,31 +552,11 @@ module.exports = function(containerId) {
     // details when the field changes.
     var activeLocation = {};
 
-    /**
-     * Display a local data callout at the given [x, y] point and its corresponding [lon, lat] coordinates.
-     * The location may not be valid, in which case no callout is displayed. Display location data for both
-     * the primary grid and overlay grid, performing interpolation when necessary.
-     */
-    function showLocationDetails(point, coord) {
-        point = point || [];
-        coord = coord || [];
-        var grids = gridAgent.value(), field = fieldAgent.value(), λ = coord[0], φ = coord[1];
-        if (!field || !field.isInsideBoundary(point[0], point[1])) {
-            return;
-        }
-
-        activeLocation = {point: point, coord: coord};  // remember where the current location is
-    }
-
     function updateLocationDetails() {
         showLocationDetails(activeLocation.point, activeLocation.coord);
     }
 
     function stopCurrentAnimation(alsoClearCanvas) {
-        animatorAgent.cancel();
-        if (alsoClearCanvas) {
-            µ.clearCanvas(d3.select("#animation").node());
-        }
     }
 
     /**
@@ -736,10 +572,6 @@ module.exports = function(containerId) {
             if (d3.select(elementId).classed("disabled")) return;
             configuration.save(newAttr);
         });
-        configuration.on("change", function(model) {
-            var attr = model.attributes;
-            d3.select(elementId).classed("highlighted", _.isEqual(_.pick(attr, keys), _.pick(newAttr, keys)));
-        });
     }
 
     /**
@@ -747,120 +579,45 @@ module.exports = function(containerId) {
      * way to accomplish this...
      */
     function init() {
-		d3.select(hostElement).append('svg')
-			.attr('class', 'fill-screen')
-			.attr('id', 'map');
-		d3.select(hostElement).append('canvas')
-			.attr('id', 'animation')
-			.attr('class', 'fill-screen');
-		d3.select(hostElement).append('canvas')
-			.attr('id', 'overlay')
-			.attr('class', 'fill-screen');
-		d3.select(hostElement).append('svg')
-			.attr('id', 'foreground')
-			.attr('class', 'fill-screen');
-        d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
+		  d3.select(hostElement).append('svg')
+			 .attr('class', 'fill-screen')
+			 .attr('id', 'map');
+		  d3.select(hostElement).append('svg')
+			 .attr('id', 'foreground')
+			 .attr('class', 'fill-screen');
+      d3.selectAll(".fill-screen").attr("width", view.width).attr("height", view.height);
 
-        if (µ.isFF()) {
-            // Workaround FF performance issue of slow click behavior on map having thick coastlines.
-            d3.select(hostElement).classed("firefox", true);
-        }
+      if (µ.isFF()) {
+        // Workaround FF performance issue of slow click behavior on map having thick coastlines.
+        d3.select(hostElement).classed("firefox", true);
+      }
 
-        // Tweak document to distinguish CSS styling between touch and non-touch environments. Hacky hack.
-        if ("ontouchstart" in document.documentElement) {
-            d3.select(document).on("touchstart", function() {});  // this hack enables :active pseudoclass
-        }
-        else {
-            d3.select(document.documentElement).classed("no-touch", true);  // to filter styles problematic for touch
-        }
+      // Tweak document to distinguish CSS styling between touch and non-touch environments. Hacky hack.
+      if ("ontouchstart" in document.documentElement) {
+        d3.select(document).on("touchstart", function() {});  // this hack enables :active pseudoclass
+      } else {
+        d3.select(document.documentElement).classed("no-touch", true);  // to filter styles problematic for touch
+      }
 
-        meshAgent.listenTo(configuration, "change:topology", function(context, attr) {
-            meshAgent.submit(buildMesh, attr);
-        });
+      meshAgent.listenTo(configuration, "change:topology", function(context, attr) {
+        meshAgent.submit(buildMesh, attr);
+      });
 
-        globeAgent.listenTo(configuration, "change:projection", function(source, attr) {
-            globeAgent.submit(buildGlobe, attr);
-        });
+      globeAgent.listenTo(configuration, "change:projection", function(source, attr) {
+        globeAgent.submit(buildGlobe, attr);
+      });
 
-        gridAgent.listenTo(configuration, "change", function() {
-            var changed = _.keys(configuration.changedAttributes()), rebuildRequired = false;
+      function startRendering() {
+          rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
+      }
+      rendererAgent.listenTo(meshAgent, "update", startRendering);
+      rendererAgent.listenTo(globeAgent, "update", startRendering);
 
-            // Build a new grid if any layer-related attributes have changed.
-            if (_.intersection(changed, ["date", "hour", "param", "surface", "level"]).length > 0) {
-                rebuildRequired = true;
-            }
-            // Build a new grid if the new overlay type is different from the current one.
-            var overlayType = configuration.get("overlayType") || "default";
-            if (_.indexOf(changed, "overlayType") >= 0 && overlayType !== "off") {
-                var grids = (gridAgent.value() || {}), primary = grids.primaryGrid, overlay = grids.overlayGrid;
-                if (!overlay) {
-                    // Do a rebuild if we have no overlay grid.
-                    rebuildRequired = true;
-                }
-                else if (overlay.type !== overlayType && !(overlayType === "default" && primary === overlay)) {
-                    // Do a rebuild if the types are different.
-                    rebuildRequired = true;
-                }
-            }
-
-            if (rebuildRequired) {
-                gridAgent.submit(buildGrids);
-            }
-        });
-        gridAgent.on("submit", function() {
-            showGridDetails(null);
-        });
-        gridAgent.on("update", function(grids) {
-            showGridDetails(grids);
-        });
-
-        function startRendering() {
-            rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
-        }
-        rendererAgent.listenTo(meshAgent, "update", startRendering);
-        rendererAgent.listenTo(globeAgent, "update", startRendering);
-
-        function startInterpolation() {
-            fieldAgent.submit(interpolateField, globeAgent.value(), gridAgent.value());
-        }
-        function cancelInterpolation() {
-            fieldAgent.cancel();
-        }
-        fieldAgent.listenTo(gridAgent, "update", startInterpolation);
-        fieldAgent.listenTo(rendererAgent, "render", startInterpolation);
-        fieldAgent.listenTo(rendererAgent, "start", cancelInterpolation);
-        fieldAgent.listenTo(rendererAgent, "redraw", cancelInterpolation);
-
-        animatorAgent.listenTo(fieldAgent, "update", function(field) {
-            animatorAgent.submit(animate, globeAgent.value(), field, gridAgent.value());
-        });
-        animatorAgent.listenTo(rendererAgent, "start", stopCurrentAnimation.bind(null, true));
-        animatorAgent.listenTo(gridAgent, "submit", stopCurrentAnimation.bind(null, false));
-        animatorAgent.listenTo(fieldAgent, "submit", stopCurrentAnimation.bind(null, false));
-
-        overlayAgent.listenTo(fieldAgent, "update", function() {
-            overlayAgent.submit(drawOverlay, fieldAgent.value(), configuration.get("overlayType"));
-        });
-        overlayAgent.listenTo(rendererAgent, "start", function() {
-            overlayAgent.submit(drawOverlay, fieldAgent.value(), null);
-        });
-        overlayAgent.listenTo(configuration, "change", function() {
-            var changed = _.keys(configuration.changedAttributes())
-            // if only overlay relevant flags have changed...
-            if (_.intersection(changed, ["overlayType", "showGridPoints"]).length > 0) {
-                overlayAgent.submit(drawOverlay, fieldAgent.value(), configuration.get("overlayType"));
-            }
-        });
-
-        // Add event handlers for showing, updating, and removing location details.
-        inputController.on("click", showLocationDetails);
-        fieldAgent.on("update", updateLocationDetails);
-
-        // When touch device changes between portrait and landscape, rebuild globe using the new view size.
-        d3.select(window).on("orientationchange", function() {
-            view = µ.view();
-            globeAgent.submit(buildGlobe, configuration.get("projection"));
-        });
+      // When touch device changes between portrait and landscape, rebuild globe using the new view size.
+      d3.select(window).on("orientationchange", function() {
+          view = µ.view();
+          globeAgent.submit(buildGlobe, configuration.get("projection"));
+      });
     }
 
     function start() {
@@ -36956,8 +36713,9 @@ module.exports = function(containerId) {
   planet(containerId);
 }
 
-//delete This
-planet('earthContainer');
+//delete this
+planet('earthContainer2');
+//delete that
 
 },{"./earth.js":1}],11:[function(require,module,exports){
 /**
