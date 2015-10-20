@@ -623,7 +623,6 @@ module.exports = function(containerId) {
         // Everything is now set up, so load configuration from the hash fragment and kick off change events.
         configuration.fetch();
     }
-
     when(true).then(init).then(start);
 
     var self = this;
@@ -36735,7 +36734,6 @@ module.exports = function(containerId) {
 }
 
 var earthHandle = earth('earthContainer2')
-
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
