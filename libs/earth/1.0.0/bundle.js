@@ -16,7 +16,6 @@ module.exports = function(containerId) {
     var Backbone = require('backbone');
     var topojson = require('topojson');
     var d3 = require('d3');
-    var graticuleLayer = require('./graticule-layer.js');
 
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
@@ -638,7 +637,7 @@ module.exports = function(containerId) {
     return self;
 };
 
-},{"./globes.js":2,"./graticule-layer.js":3,"./micro.js":4,"./products.js":12,"./when.js":13,"backbone":5,"d3":7,"lodash":9,"topojson":10}],2:[function(require,module,exports){
+},{"./globes.js":2,"./micro.js":3,"./products.js":12,"./when.js":13,"backbone":4,"d3":6,"lodash":9,"topojson":10}],2:[function(require,module,exports){
 /**
  * globes - a set of models of the earth, each having their own kind of projection and onscreen behavior.
  *
@@ -993,24 +992,7 @@ module.exports = function() {
 
 };
 
-},{"./micro.js":4,"d3":7,"lodash":9}],3:[function(require,module,exports){
-var d3 = require('d3');
-
-module.exports = {
-  addLayer: function(globe, hostElement) {
-    var path = d3.geo.path().projection(globe.projection);
-    d3.select("#map").append("path")
-      .attr("class", "graticule")
-      .datum(d3.geo.graticule())
-      .attr("d", path);
-  },
-  removeLayer: function() {
-    d3.select("#map").selectAll(".graticule").remove()
-    console.log('trying to remove graticule');
-  }
-}
-
-},{"d3":7}],4:[function(require,module,exports){
+},{"./micro.js":3,"d3":6,"lodash":9}],3:[function(require,module,exports){
 /**
  * micro - a grab bag of somewhat useful utility functions and other stuff that requires unit testing
  *
@@ -1674,7 +1656,7 @@ module.exports = function() {
 
 };
 
-},{"./when.js":13,"backbone":5,"lodash":9}],5:[function(require,module,exports){
+},{"./when.js":13,"backbone":4,"lodash":9}],4:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.3
 
@@ -3572,7 +3554,7 @@ module.exports = function() {
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":8,"underscore":6}],6:[function(require,module,exports){
+},{"jquery":8,"underscore":5}],5:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -5122,7 +5104,7 @@ module.exports = function() {
   }
 }.call(this));
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 !function() {
   var d3 = {
     version: "3.5.6"
@@ -14627,7 +14609,24 @@ module.exports = function() {
   if (typeof define === "function" && define.amd) define(d3); else if (typeof module === "object" && module.exports) module.exports = d3;
   this.d3 = d3;
 }();
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+var d3 = require('d3');
+
+module.exports = {
+  addLayer: function(globe, hostElement) {
+    var path = d3.geo.path().projection(globe.projection);
+    d3.select("#map").append("path")
+      .attr("class", "graticule")
+      .datum(d3.geo.graticule())
+      .attr("d", path);
+  },
+  removeLayer: function() {
+    d3.select("#map").selectAll(".graticule").remove()
+    console.log('trying to remove graticule');
+  }
+}
+
+},{"d3":6}],8:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -36732,24 +36731,36 @@ return jQuery;
 
 },{}],11:[function(require,module,exports){
 var earth = require('./earth.js');
-var graticuleLayer = require('./graticule-layer.js');
-module.exports = function(containerId) {
-  return earth(containerId);
+
+var earthHandle;
+module.exports = {
+  drawEarth: function(containerId) {
+    earthHandle = earth(containerId);
+  },
+  addLayer: function(layer) {
+    console.log('only adds graticule for now, needs to be made extendable');
+    earthHandle.addLayer(layer);
+  },
+  removeLayer: function(layer) {
+    console.log('only removes graticule for now, needs to be made extendable');
+    earthHandle.removeLayer(layer);
+  }
 }
 
+var graticuleLayer = require('interactive-earth-graticule');
 var earthHandle = earth('earthContainer2')
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
     .addLayer(graticuleLayer);
-}, 3000);
+}, 2000);
 
 setTimeout(function() {
   earthHandle
     .removeLayer(graticuleLayer);
-}, 5000);
+}, 4000);
 
-},{"./earth.js":1,"./graticule-layer.js":3}],12:[function(require,module,exports){
+},{"./earth.js":1,"interactive-earth-graticule":7}],12:[function(require,module,exports){
 /**
  * products - defines the behavior of weather data grids, including grid construction, interpolation, and color scales.
  *
@@ -37450,7 +37461,7 @@ module.exports = function() {
 
 }();
 
-},{"./micro.js":4,"./when.js":13,"backbone":5,"lodash":9}],13:[function(require,module,exports){
+},{"./micro.js":3,"./when.js":13,"backbone":4,"lodash":9}],13:[function(require,module,exports){
 (function (process,global){
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 

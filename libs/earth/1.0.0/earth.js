@@ -15,7 +15,6 @@ module.exports = function(containerId) {
     var Backbone = require('backbone');
     var topojson = require('topojson');
     var d3 = require('d3');
-    var graticuleLayer = require('./graticule-layer.js');
 
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;

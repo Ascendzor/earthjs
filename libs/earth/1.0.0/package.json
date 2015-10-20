@@ -1,6 +1,6 @@
 {
   "name": "interactive-earth",
-  "version": "0.1.15",
+  "version": "0.1.18",
   "description": "An interactive earth",
   "license": "MIT",
   "main": "planet.js",

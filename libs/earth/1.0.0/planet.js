@@ -1,5 +1,4 @@
 var earth = require('./earth.js');
-var graticuleLayer = require('./graticule-layer.js');
 
 var earthHandle;
 module.exports = {
@@ -8,22 +7,23 @@ module.exports = {
   },
   addLayer: function(layer) {
     console.log('only adds graticule for now, needs to be made extendable');
-    earthHandle.addLayer(graticuleLayer);
+    earthHandle.addLayer(layer);
   },
   removeLayer: function(layer) {
     console.log('only removes graticule for now, needs to be made extendable');
-    earthHandle.removeLayer(graticuleLayer);
+    earthHandle.removeLayer(layer);
   }
 }
 
+var graticuleLayer = require('interactive-earth-graticule');
 var earthHandle = earth('earthContainer2')
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
     .addLayer(graticuleLayer);
-}, 3000);
+}, 2000);
 
 setTimeout(function() {
   earthHandle
     .removeLayer(graticuleLayer);
-}, 5000);
+}, 4000);
