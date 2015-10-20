@@ -8,6 +8,10 @@ var earthHandle = earth('earthContainer2')
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
-    .addLayer(graticuleLayer)
-    .removeLayer('removing a layer');
+    .addLayer(graticuleLayer);
 }, 3000);
+
+setTimeout(function() {
+  earthHandle
+    .removeLayer(graticuleLayer);
+}, 5000);

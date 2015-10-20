@@ -627,16 +627,12 @@ module.exports = function(containerId) {
       return self;
     }
 
-    self.layers = [];
-
-    self.addLayer = function(layerType) {
-      self.layers.push(layerType);
-      //rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
-      graticuleLayer(hostElement);
+    self.addLayer = function(layer) {
+      layer.addLayer(globeAgent.value(), hostElement);
       return self;
     }
-    self.removeLayer = function(layerType) {
-      console.log(layerType);
+    self.removeLayer = function(layer) {
+      layer.removeLayer();
       return self;
     }
     return self;
@@ -999,26 +995,22 @@ module.exports = function() {
 
 },{"./micro.js":4,"d3":7,"lodash":9}],3:[function(require,module,exports){
 var d3 = require('d3');
-var µ = require('./micro.js')();
 
-var drawOverlay = function(hostElement, randomString) {
-  d3.select(hostElement)
-    .append('canvas')
-    .attr('class', 'fill-screen')
-    .attr('id', 'overlay');
-  var ctx = d3.select("#overlay").node().getContext("2d");
-  µ.clearCanvas(d3.select("#overlay").node());
-  ctx.putImageData(field.overlay, 0, 0);
-  console.log(randomString);
+module.exports = {
+  addLayer: function(globe, hostElement) {
+    var path = d3.geo.path().projection(globe.projection);
+    d3.select("#map").append("path")
+      .attr("class", "graticule")
+      .datum(d3.geo.graticule())
+      .attr("d", path);
+  },
+  removeLayer: function() {
+    d3.select("#map").selectAll(".graticule").remove()
+    console.log('trying to remove graticule');
+  }
 }
 
-module.exports = function(hostElement) {
-  var graticuleAgent = µ.newAgent();
-  graticuleAgent.submit(drawOverlay, hostElement, 'test');
-  console.log('trying to render the graticule');
-}
-
-},{"./micro.js":4,"d3":7}],4:[function(require,module,exports){
+},{"d3":7}],4:[function(require,module,exports){
 /**
  * micro - a grab bag of somewhat useful utility functions and other stuff that requires unit testing
  *
@@ -36749,9 +36741,13 @@ var earthHandle = earth('earthContainer2')
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
-    .addLayer(graticuleLayer)
-    .removeLayer('removing a layer');
+    .addLayer(graticuleLayer);
 }, 3000);
+
+setTimeout(function() {
+  earthHandle
+    .removeLayer(graticuleLayer);
+}, 5000);
 
 },{"./earth.js":1,"./graticule-layer.js":3}],12:[function(require,module,exports){
 /**

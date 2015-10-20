@@ -626,16 +626,12 @@ module.exports = function(containerId) {
       return self;
     }
 
-    self.layers = [];
-
-    self.addLayer = function(layerType) {
-      self.layers.push(layerType);
-      //rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
-      graticuleLayer(hostElement);
+    self.addLayer = function(layer) {
+      layer.addLayer(globeAgent.value(), hostElement);
       return self;
     }
-    self.removeLayer = function(layerType) {
-      console.log(layerType);
+    self.removeLayer = function(layer) {
+      layer.removeLayer();
       return self;
     }
     return self;
