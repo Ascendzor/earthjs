@@ -263,16 +263,10 @@ module.exports = function() {
                 mapSvg.append("use")
                     .attr("xlink:href", "#sphere")
                     .attr("fill", "url(#orthographic-fill)");
-                if(_.contains(layers, 'gratitudes')) {
-                  mapSvg.append("path")
-                     .attr("class", "graticule")
-                     .datum(d3.geo.graticule())
-                     .attr("d", path);
-                  mapSvg.append("path")
-                     .attr("class", "hemisphere")
-                     .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
-                     .attr("d", path);
-                }
+                
+                _.forEach(layers, function(layer) {
+                  layer(mapSvg, path);
+                });
 
                 mapSvg.append("path")
                     .attr("class", "coastline");
@@ -305,7 +299,7 @@ module.exports = function() {
             newProjection: function() {
                 return d3.geo.polyhedron.waterman().rotate([20, 0]).precision(0.1);
             },
-            defineMap: function(mapSvg, foregroundSvg) {
+            defineMap: function(mapSvg, foregroundSvg, layers) {
                 var path = d3.geo.path().projection(this.projection);
                 var defs = mapSvg.append("defs");
                 defs.append("path")

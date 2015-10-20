@@ -16,6 +16,7 @@ module.exports = function(containerId) {
     var Backbone = require('backbone');
     var topojson = require('topojson');
     var d3 = require('d3');
+    var graticuleLayer = require('./graticule-layer.js');
 
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
@@ -45,17 +46,12 @@ module.exports = function(containerId) {
         height: hostElement.offsetHeight
     };
 
-    function newAgent() {
-        return µ.newAgent();
-    }
-
     // Construct the page's main internal components:
-
     var configuration = µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
-    var meshAgent = newAgent();      // map data for the earth
-    var globeAgent = newAgent();     // the model of the globe
-    var rendererAgent = newAgent();  // the globe SVG renderer
+    var meshAgent = µ.newAgent();      // map data for the earth
+    var globeAgent = µ.newAgent();     // the model of the globe
+    var rendererAgent = µ.newAgent();  // the globe SVG renderer
 
     /**
      * The input controller is an object that translates move operations (drag and/or zoom) into mutations of the
@@ -635,8 +631,8 @@ module.exports = function(containerId) {
 
     self.addLayer = function(layerType) {
       self.layers.push(layerType);
-      rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
-
+      //rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
+      graticuleLayer(hostElement);
       return self;
     }
     self.removeLayer = function(layerType) {
@@ -646,7 +642,7 @@ module.exports = function(containerId) {
     return self;
 };
 
-},{"./globes.js":2,"./micro.js":3,"./products.js":11,"./when.js":12,"backbone":4,"d3":6,"lodash":8,"topojson":9}],2:[function(require,module,exports){
+},{"./globes.js":2,"./graticule-layer.js":3,"./micro.js":4,"./products.js":12,"./when.js":13,"backbone":5,"d3":7,"lodash":9,"topojson":10}],2:[function(require,module,exports){
 /**
  * globes - a set of models of the earth, each having their own kind of projection and onscreen behavior.
  *
@@ -912,16 +908,10 @@ module.exports = function() {
                 mapSvg.append("use")
                     .attr("xlink:href", "#sphere")
                     .attr("fill", "url(#orthographic-fill)");
-                if(_.contains(layers, 'gratitudes')) {
-                  mapSvg.append("path")
-                     .attr("class", "graticule")
-                     .datum(d3.geo.graticule())
-                     .attr("d", path);
-                  mapSvg.append("path")
-                     .attr("class", "hemisphere")
-                     .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
-                     .attr("d", path);
-                }
+                
+                _.forEach(layers, function(layer) {
+                  layer(mapSvg, path);
+                });
 
                 mapSvg.append("path")
                     .attr("class", "coastline");
@@ -954,7 +944,7 @@ module.exports = function() {
             newProjection: function() {
                 return d3.geo.polyhedron.waterman().rotate([20, 0]).precision(0.1);
             },
-            defineMap: function(mapSvg, foregroundSvg) {
+            defineMap: function(mapSvg, foregroundSvg, layers) {
                 var path = d3.geo.path().projection(this.projection);
                 var defs = mapSvg.append("defs");
                 defs.append("path")
@@ -1007,7 +997,28 @@ module.exports = function() {
 
 };
 
-},{"./micro.js":3,"d3":6,"lodash":8}],3:[function(require,module,exports){
+},{"./micro.js":4,"d3":7,"lodash":9}],3:[function(require,module,exports){
+var d3 = require('d3');
+var µ = require('./micro.js')();
+
+var drawOverlay = function(hostElement, randomString) {
+  d3.select(hostElement)
+    .append('canvas')
+    .attr('class', 'fill-screen')
+    .attr('id', 'overlay');
+  var ctx = d3.select("#overlay").node().getContext("2d");
+  µ.clearCanvas(d3.select("#overlay").node());
+  ctx.putImageData(field.overlay, 0, 0);
+  console.log(randomString);
+}
+
+module.exports = function(hostElement) {
+  var graticuleAgent = µ.newAgent();
+  graticuleAgent.submit(drawOverlay, hostElement, 'test');
+  console.log('trying to render the graticule');
+}
+
+},{"./micro.js":4,"d3":7}],4:[function(require,module,exports){
 /**
  * micro - a grab bag of somewhat useful utility functions and other stuff that requires unit testing
  *
@@ -1671,7 +1682,7 @@ module.exports = function() {
 
 };
 
-},{"./when.js":12,"backbone":4,"lodash":8}],4:[function(require,module,exports){
+},{"./when.js":13,"backbone":5,"lodash":9}],5:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.3
 
@@ -3569,7 +3580,7 @@ module.exports = function() {
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":7,"underscore":5}],5:[function(require,module,exports){
+},{"jquery":8,"underscore":6}],6:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -5119,7 +5130,7 @@ module.exports = function() {
   }
 }.call(this));
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 !function() {
   var d3 = {
     version: "3.5.6"
@@ -14624,7 +14635,7 @@ module.exports = function() {
   if (typeof define === "function" && define.amd) define(d3); else if (typeof module === "object" && module.exports) module.exports = d3;
   this.d3 = d3;
 }();
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -23836,7 +23847,7 @@ return jQuery;
 
 }));
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -36191,7 +36202,7 @@ return jQuery;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 !function() {
   var topojson = {
     version: "1.6.19",
@@ -36727,8 +36738,9 @@ return jQuery;
   else this.topojson = topojson;
 }();
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var earth = require('./earth.js');
+var graticuleLayer = require('./graticule-layer.js');
 module.exports = function(containerId) {
   return earth(containerId);
 }
@@ -36737,11 +36749,11 @@ var earthHandle = earth('earthContainer2')
 setTimeout(function() {
   earthHandle
     //.setProjection('equirectangular')
-    .addLayer('gratitudes')
+    .addLayer(graticuleLayer)
     .removeLayer('removing a layer');
 }, 3000);
 
-},{"./earth.js":1}],11:[function(require,module,exports){
+},{"./earth.js":1,"./graticule-layer.js":3}],12:[function(require,module,exports){
 /**
  * products - defines the behavior of weather data grids, including grid construction, interpolation, and color scales.
  *
@@ -37442,7 +37454,7 @@ module.exports = function() {
 
 }();
 
-},{"./micro.js":3,"./when.js":12,"backbone":4,"lodash":8}],12:[function(require,module,exports){
+},{"./micro.js":4,"./when.js":13,"backbone":5,"lodash":9}],13:[function(require,module,exports){
 (function (process,global){
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 
@@ -38398,7 +38410,7 @@ module.exports = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":13}],13:[function(require,module,exports){
+},{"_process":14}],14:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -38491,4 +38503,4 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}]},{},[10]);
+},{}]},{},[11]);

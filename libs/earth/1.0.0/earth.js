@@ -15,6 +15,7 @@ module.exports = function(containerId) {
     var Backbone = require('backbone');
     var topojson = require('topojson');
     var d3 = require('d3');
+    var graticuleLayer = require('./graticule-layer.js');
 
     var SECOND = 1000;
     var MINUTE = 60 * SECOND;
@@ -44,17 +45,12 @@ module.exports = function(containerId) {
         height: hostElement.offsetHeight
     };
 
-    function newAgent() {
-        return µ.newAgent();
-    }
-
     // Construct the page's main internal components:
-
     var configuration = µ.buildConfiguration(globes, products.overlayTypes);  // holds the page's current configuration settings
     var inputController = buildInputController();             // interprets drag/zoom operations
-    var meshAgent = newAgent();      // map data for the earth
-    var globeAgent = newAgent();     // the model of the globe
-    var rendererAgent = newAgent();  // the globe SVG renderer
+    var meshAgent = µ.newAgent();      // map data for the earth
+    var globeAgent = µ.newAgent();     // the model of the globe
+    var rendererAgent = µ.newAgent();  // the globe SVG renderer
 
     /**
      * The input controller is an object that translates move operations (drag and/or zoom) into mutations of the
@@ -634,8 +630,8 @@ module.exports = function(containerId) {
 
     self.addLayer = function(layerType) {
       self.layers.push(layerType);
-      rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
-
+      //rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
+      graticuleLayer(hostElement);
       return self;
     }
     self.removeLayer = function(layerType) {
