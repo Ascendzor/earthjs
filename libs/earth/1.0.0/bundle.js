@@ -36726,22 +36726,17 @@ return jQuery;
 },{}],10:[function(require,module,exports){
 var earth = require('./earth.js');
 module.exports = function(containerId) {
-  earth(containerId);
+  return earth(containerId);
 }
 
 var earthHandle = earth('earthContainer2')
 
 setTimeout(function() {
-  earthHandle.setProjection('equirectangular')
-  .addLayer('adding a layer')
-  .removeLayer('removing a layer');
-}, 1000);
-
-setTimeout(function() {
-  earthHandle.setProjection('orthographic')
-  .addLayer('adding a layer')
-  .removeLayer('removing a layer');
-}, 5000);
+  earthHandle
+    //.setProjection('equirectangular')
+    .addLayer('adding a layer')
+    .removeLayer('removing a layer');
+}, 3000);
 
 },{"./earth.js":1}],11:[function(require,module,exports){
 /**

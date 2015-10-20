@@ -4,7 +4,7 @@
   "description": "An interactive earth",
   "license": "MIT",
   "main": "planet.js",
-  "author": "Troy Mare <wow.troymare@gmail.com",
+  "author": "Troy Mare <wow.troymare@gmail.com>",
   "dependencies": {
     "backbone": "1.2.3",
     "d3": "3.5.6",
