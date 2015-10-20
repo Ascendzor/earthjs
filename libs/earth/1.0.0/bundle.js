@@ -628,6 +628,21 @@ module.exports = function(containerId) {
 
     when(true).then(init).then(start);
 
+    var self = this;
+    self.setProjection = function(projectionType) {
+      globeAgent.submit(buildGlobe, projectionType);
+      return self;
+    }
+
+    self.addLayer = function(layerType) {
+      console.log(layerType);
+      return self;
+    }
+    self.removeLayer = function(layerType) {
+      console.log(layerType);
+      return self;
+    }
+    return self;
 };
 
 },{"./globes.js":2,"./micro.js":3,"./products.js":11,"./when.js":12,"backbone":4,"d3":6,"lodash":8,"topojson":9}],2:[function(require,module,exports){
@@ -896,14 +911,14 @@ module.exports = function() {
                 mapSvg.append("use")
                     .attr("xlink:href", "#sphere")
                     .attr("fill", "url(#orthographic-fill)");
-                mapSvg.append("path")
-                    .attr("class", "graticule")
-                    .datum(d3.geo.graticule())
-                    .attr("d", path);
-                mapSvg.append("path")
-                    .attr("class", "hemisphere")
-                    .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
-                    .attr("d", path);
+                //mapSvg.append("path")
+                //    .attr("class", "graticule")
+                //    .datum(d3.geo.graticule())
+                //    .attr("d", path);
+                //mapSvg.append("path")
+                //    .attr("class", "hemisphere")
+                //    .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
+                //    .attr("d", path);
                 mapSvg.append("path")
                     .attr("class", "coastline");
                 mapSvg.append("path")
@@ -36709,14 +36724,24 @@ return jQuery;
 }();
 
 },{}],10:[function(require,module,exports){
-var planet = require('./earth.js');
+var earth = require('./earth.js');
 module.exports = function(containerId) {
-  planet(containerId);
+  earth(containerId);
 }
 
-//delete this
-planet('earthContainer2');
-//delete that
+var earthHandle = earth('earthContainer2')
+
+setTimeout(function() {
+  earthHandle.setProjection('equirectangular')
+  .addLayer('adding a layer')
+  .removeLayer('removing a layer');
+}, 1000);
+
+setTimeout(function() {
+  earthHandle.setProjection('orthographic')
+  .addLayer('adding a layer')
+  .removeLayer('removing a layer');
+}, 5000);
 
 },{"./earth.js":1}],11:[function(require,module,exports){
 /**

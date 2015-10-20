@@ -627,4 +627,19 @@ module.exports = function(containerId) {
 
     when(true).then(init).then(start);
 
+    var self = this;
+    self.setProjection = function(projectionType) {
+      globeAgent.submit(buildGlobe, projectionType);
+      return self;
+    }
+
+    self.addLayer = function(layerType) {
+      console.log(layerType);
+      return self;
+    }
+    self.removeLayer = function(layerType) {
+      console.log(layerType);
+      return self;
+    }
+    return self;
 };
