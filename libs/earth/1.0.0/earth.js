@@ -227,67 +227,65 @@ module.exports = function(containerId) {
     }
 
     function buildRenderer(mesh, globe) {
-        if (!mesh || !globe) return null;
+      if (!mesh || !globe) return null;
 
-        console.log("rendering map");
+      // UNDONE: better way to do the following?
+      var dispatch = _.clone(Backbone.Events);
+      if (rendererAgent._previous) {
+          rendererAgent._previous.stopListening();
+      }
+      rendererAgent._previous = dispatch;
 
-        // UNDONE: better way to do the following?
-        var dispatch = _.clone(Backbone.Events);
-        if (rendererAgent._previous) {
-            rendererAgent._previous.stopListening();
-        }
-        rendererAgent._previous = dispatch;
+      // First clear map and foreground svg contents.
+      µ.removeChildren(d3.select("#map").node());
+      µ.removeChildren(d3.select("#foreground").node());
+      // Create new map svg elements.
+      globe.defineMap(d3.select("#map"), d3.select("#foreground"), self.layers);
 
-        // First clear map and foreground svg contents.
-        µ.removeChildren(d3.select("#map").node());
-        µ.removeChildren(d3.select("#foreground").node());
-        // Create new map svg elements.
-        globe.defineMap(d3.select("#map"), d3.select("#foreground"));
+      var path = d3.geo.path().projection(globe.projection).pointRadius(7);
+      var coastline = d3.select(".coastline");
+      var lakes = d3.select(".lakes");
+      d3.selectAll("path").attr("d", path);  // do an initial draw -- fixes issue with safari
 
-        var path = d3.geo.path().projection(globe.projection).pointRadius(7);
-        var coastline = d3.select(".coastline");
-        var lakes = d3.select(".lakes");
-        d3.selectAll("path").attr("d", path);  // do an initial draw -- fixes issue with safari
+      // Throttled draw method helps with slow devices that would get overwhelmed by too many redraw events.
+      var REDRAW_WAIT = 5;  // milliseconds
+      var doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
 
-        // Throttled draw method helps with slow devices that would get overwhelmed by too many redraw events.
-        var REDRAW_WAIT = 5;  // milliseconds
-        var doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
+      function doDraw() {
+          d3.selectAll("path").attr("d", path);
+          rendererAgent.trigger("redraw");
+          doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
+      }
 
-        function doDraw() {
-            d3.selectAll("path").attr("d", path);
-            rendererAgent.trigger("redraw");
-            doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
-        }
+      // Attach to map rendering events on input controller.
+      dispatch.listenTo(
+          inputController, {
+              moveStart: function() {
+                  coastline.datum(mesh.coastLo);
+                  lakes.datum(mesh.lakesLo);
+                  rendererAgent.trigger("start");
+              },
+              move: function() {
+                  doDraw_throttled();
+              },
+              moveEnd: function() {
+                  coastline.datum(mesh.coastHi);
+                  lakes.datum(mesh.lakesHi);
+                  d3.selectAll("path").attr("d", path);
+                  rendererAgent.trigger("render");
+              },
+              click: function() {
+                console.log('you clicked');
+              }
+          });
 
-        // Attach to map rendering events on input controller.
-        dispatch.listenTo(
-            inputController, {
-                moveStart: function() {
-                    coastline.datum(mesh.coastLo);
-                    lakes.datum(mesh.lakesLo);
-                    rendererAgent.trigger("start");
-                },
-                move: function() {
-                    doDraw_throttled();
-                },
-                moveEnd: function() {
-                    coastline.datum(mesh.coastHi);
-                    lakes.datum(mesh.lakesHi);
-                    d3.selectAll("path").attr("d", path);
-                    rendererAgent.trigger("render");
-                },
-                click: function() {
-                  console.log('you clicked');
-                }
-            });
+      // Finally, inject the globe model into the input controller. Do it on the next event turn to ensure
+      // renderer is fully set up before events start flowing.
+      when(true).then(function() {
+          inputController.globe(globe);
+      });
 
-        // Finally, inject the globe model into the input controller. Do it on the next event turn to ensure
-        // renderer is fully set up before events start flowing.
-        when(true).then(function() {
-            inputController.globe(globe);
-        });
-
-        return "ready";
+      return "ready";
     }
 
     function createMask(globe) {
@@ -633,8 +631,12 @@ module.exports = function(containerId) {
       return self;
     }
 
+    self.layers = [];
+
     self.addLayer = function(layerType) {
-      console.log(layerType);
+      self.layers.push(layerType);
+      rendererAgent.submit(buildRenderer, meshAgent.value(), globeAgent.value());
+
       return self;
     }
     self.removeLayer = function(layerType) {

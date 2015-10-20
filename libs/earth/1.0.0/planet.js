@@ -3,11 +3,11 @@ module.exports = function(containerId) {
   return earth(containerId);
 }
 
-var earthHandle = earth('earthContainer2')
-
-setTimeout(function() {
-  earthHandle
-    //.setProjection('equirectangular')
-    .addLayer('adding a layer')
-    .removeLayer('removing a layer');
-}, 3000);
+// var earthHandle = earth('earthContainer2')
+//
+// setTimeout(function() {
+//   earthHandle
+//     //.setProjection('equirectangular')
+//     .addLayer('gratitudes')
+//     .removeLayer('removing a layer');
+// }, 3000);

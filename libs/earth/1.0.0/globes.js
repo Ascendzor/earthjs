@@ -246,7 +246,7 @@ module.exports = function() {
             newProjection: function() {
                 return d3.geo.orthographic().rotate(currentPosition()).precision(0.1).clipAngle(90);
             },
-            defineMap: function(mapSvg, foregroundSvg) {
+            defineMap: function(mapSvg, foregroundSvg, layers) {
                 var path = d3.geo.path().projection(this.projection);
                 var defs = mapSvg.append("defs");
                 var gradientFill = defs.append("radialGradient")
@@ -263,14 +263,17 @@ module.exports = function() {
                 mapSvg.append("use")
                     .attr("xlink:href", "#sphere")
                     .attr("fill", "url(#orthographic-fill)");
-                //mapSvg.append("path")
-                //    .attr("class", "graticule")
-                //    .datum(d3.geo.graticule())
-                //    .attr("d", path);
-                //mapSvg.append("path")
-                //    .attr("class", "hemisphere")
-                //    .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
-                //    .attr("d", path);
+                if(_.contains(layers, 'gratitudes')) {
+                  mapSvg.append("path")
+                     .attr("class", "graticule")
+                     .datum(d3.geo.graticule())
+                     .attr("d", path);
+                  mapSvg.append("path")
+                     .attr("class", "hemisphere")
+                     .datum(d3.geo.graticule().minorStep([0, 90]).majorStep([0, 90]))
+                     .attr("d", path);
+                }
+
                 mapSvg.append("path")
                     .attr("class", "coastline");
                 mapSvg.append("path")
