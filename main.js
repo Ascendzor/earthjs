@@ -1,19 +1,32 @@
 var interactiveEarth = require('interactive-earth');
 var graticuleLayer = require('interactive-earth-graticule');
 var pointsLayer = require('interactive-earth-points');
+var moment = require('moment');
 
 var lightningOptions = {
   get: '',
   color: 'red',
   pointDuration: 10,
   getData: function(cb) {
-    var coord = [178.79835810890188, 2.7444937212815645];
-    var coord1 = [170.79835810890188, 10.7444937212815645];
-    cb([coord, coord1]);
+    var coord0 = {
+      long: 178.79835810890188,
+      lat: 2.7444937212815645,
+      dateTime: moment().toDate()
+    };
+    var coord1 = {
+      long: 170,
+      lat: 10,
+      dateTime: moment().toDate()
+    }
+    cb([coord0, coord1]);
     setInterval(function() {
       if(Math.random() > 0.5) {
-        var coord = [160 + Math.random() * 20, 2 + Math.random() * 20];
-        cb([coord]);
+        var coord = {
+          long: 160 + Math.random() * 20,
+          lat: 2 + Math.random() * 20,
+          dateTime: moment().toDate()
+        }
+        cb(coord);
       }
     }, 500);
   }
