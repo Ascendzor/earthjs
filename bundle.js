@@ -6,7 +6,12 @@ var pointsLayer = require('interactive-earth-points');
 var lightningOptions = {
   get: '',
   color: 'red',
-  pointDuration: 10
+  pointDuration: 10,
+  getData: function(cb) {
+    var coord = [178.79835810890188, 2.7444937212815645];
+    var coord1 = [170.79835810890188, 10.7444937212815645];
+    cb([coord, coord1]);
+  }
 }
 var lightningPointsLayer = pointsLayer(lightningOptions)
 interactiveEarth.drawEarth('earthContainer');
@@ -21909,27 +21914,23 @@ var _ = require('lodash');
 var defaultOptions = {
   get: '',
   color: 'red',
-  pointDuration: 10
-}
-var loadPoints = function() {
-  var coord = [178.79835810890188, 2.7444937212815645];
-  var coord1 = [170.79835810890188, 10.7444937212815645];
-  return [coord, coord1];
+  pointDuration: 10,
+  getData: function() {}
 }
 module.exports = function (options) {
   if(!options) options == defaultOptions;
-  console.log(options);
   return {
     addLayer: function(globe, hostElement) {
-      var path = d3.geo.path().projection(globe.projection).pointRadius(4.5);
-      var points = loadPoints();
+      options.getData(function(data) {
+        var path = d3.geo.path().projection(globe.projection).pointRadius(4.5);
 
-      _.forEach(points, function(point) {
-        d3.select("#map")
-          .append("path")
-          .datum({type: "Point", coordinates: point})
-          .attr('d', path)
-          .attr("class", "location-mark")
+        _.forEach(data, function(point) {
+          d3.select("#map")
+            .append("path")
+            .datum({type: "Point", coordinates: point})
+            .attr('d', path)
+            .attr("class", "location-mark")
+        });
       });
     },
     removeLayer: function() {
