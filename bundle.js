@@ -11,6 +11,12 @@ var lightningOptions = {
     var coord = [178.79835810890188, 2.7444937212815645];
     var coord1 = [170.79835810890188, 10.7444937212815645];
     cb([coord, coord1]);
+    setInterval(function() {
+      if(Math.random() > 0.5) {
+        var coord = [160 + Math.random() * 20, 2 + Math.random() * 20];
+        cb([coord]);
+      }
+    }, 500);
   }
 }
 var lightningPointsLayer = pointsLayer(lightningOptions)
@@ -21923,13 +21929,13 @@ module.exports = function (options) {
     addLayer: function(globe, hostElement) {
       options.getData(function(data) {
         var path = d3.geo.path().projection(globe.projection).pointRadius(4.5);
-
         _.forEach(data, function(point) {
           d3.select("#map")
             .append("path")
             .datum({type: "Point", coordinates: point})
             .attr('d', path)
             .attr("class", "location-mark")
+            .attr('id', point.toString());
         });
       });
     },
