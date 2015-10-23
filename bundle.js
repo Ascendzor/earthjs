@@ -7,24 +7,24 @@ var moment = require('moment');
 var lightningOptions = {
   get: '',
   color: 'red',
-  pointDuration: 10,
+  pointDuration: 10000,
   getData: function(cb) {
     var coord0 = {
-      long: 178.79835810890188,
-      lat: 2.7444937212815645,
+      long: 103,
+      lat: -40,
       dateTime: moment().toDate()
     };
     var coord1 = {
       long: 170,
-      lat: 10,
+      lat: -11,
       dateTime: moment().toDate()
     }
     cb([coord0, coord1]);
     setInterval(function() {
       if(Math.random() > 0.5) {
         var coord = {
-          long: 160 + Math.random() * 20,
-          lat: 2 + Math.random() * 20,
+          long: 100 + Math.random() * 70,
+          lat: -40 + Math.random() * 30,
           dateTime: moment().toDate()
         }
         cb(coord);
@@ -47,7 +47,7 @@ setTimeout(function() {
   interactiveEarth.addLayer(lightningPointsLayer);
 }, 1000);
 
-},{"interactive-earth":17,"interactive-earth-graticule":3,"interactive-earth-points":7,"moment":2}],2:[function(require,module,exports){
+},{"interactive-earth":18,"interactive-earth-graticule":3,"interactive-earth-points":8,"moment":2}],2:[function(require,module,exports){
 //! moment.js
 //! version : 2.10.6
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -25123,30 +25123,42 @@ arguments[4][4][0].apply(exports,arguments)
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],7:[function(require,module,exports){
+arguments[4][2][0].apply(exports,arguments)
+},{"dup":2}],8:[function(require,module,exports){
 var d3 = require('d3');
 var _ = require('lodash');
+var moment = require('moment');
 
 var defaultOptions = {
-  get: '',
   color: 'red',
-  pointDuration: 10,
+  pointDuration: 10000,
   getData: function() {}
 }
 module.exports = function (options) {
   if(!options) options == defaultOptions;
+  var allPoints = [];
   return {
     addLayer: function(globe, hostElement) {
       options.getData(function(data) {
         if(data.constructor !== Array) data = [data];
         var path = d3.geo.path().projection(globe.projection).pointRadius(4.5);
-        _.forEach(data, function(point) {
-          d3.select("#map")
-            .append("path")
-            .datum({type: "Point", coordinates: [point.long, point.lat]})
-            .attr('d', path)
-            .attr("class", "location-mark")
-            .attr('id', JSON.stringify(point));
-        });
+        d3.select('#map')
+          .append('path')
+          .data(_.map(data, function(point) {
+            return {type: 'Point', dateTime: point.dateTime, coordinates: [point.long, point.lat]};
+          }))
+          .attr('id', function(d, i) { return 'a'+Math.floor(data[i].long) })
+          .attr('d', path)
+          .attr('class', 'location-mark');
+      });
+    },
+    update: function() {
+      d3.selectAll('.location-mark').each(function (point) {
+        if(moment().diff(moment(point.dateTime)) > options.pointDuration) {
+          var selector = '#a' + Math.floor(point.coordinates[0]);
+          var d3Handle = d3.select(selector);
+          d3Handle.remove();
+        }
       });
     },
     removeLayer: function() {
@@ -25155,7 +25167,7 @@ module.exports = function (options) {
   }
 }
 
-},{"d3":5,"lodash":6}],8:[function(require,module,exports){
+},{"d3":5,"lodash":6,"moment":7}],9:[function(require,module,exports){
 /**
  * earth - a project to visualize global air data.
  *
@@ -25404,11 +25416,24 @@ module.exports = function(containerId) {
       var REDRAW_WAIT = 5;  // milliseconds
       var doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
 
+      var logic = function() {
+        _.forEach(self.layers, function(layer){
+          layer.update && layer.update();
+        });
+      }
+
       function doDraw() {
           d3.selectAll("path").attr("d", path);
           rendererAgent.trigger("redraw");
           doDraw_throttled = _.throttle(doDraw, REDRAW_WAIT, {leading: false});
       }
+
+      var frame = function() {
+        logic();
+        //doDraw(); //I think you don't need the render event anymore
+        window.requestAnimationFrame(frame);
+      }
+      window.requestAnimationFrame(frame);
 
       // Attach to map rendering events on input controller.
       dispatch.listenTo(
@@ -25427,8 +25452,10 @@ module.exports = function(containerId) {
                   d3.selectAll("path").attr("d", path);
                   rendererAgent.trigger("render");
               },
-              click: function() {
-                console.log('you clicked');
+              click: function(point, coord) {
+                console.log('your click coords: ');
+                console.log(point);
+                console.log(coord);
               }
           });
 
@@ -25782,8 +25809,9 @@ module.exports = function(containerId) {
       globeAgent.submit(buildGlobe, projectionType);
       return self;
     }
-
+    self.layers = [];
     self.addLayer = function(layer) {
+      self.layers.push(layer);
       layer.addLayer(globeAgent.value(), hostElement);
       return self;
     }
@@ -25794,7 +25822,7 @@ module.exports = function(containerId) {
     return self;
 };
 
-},{"./globes.js":9,"./micro.js":10,"./products.js":18,"./when.js":19,"backbone":11,"d3":12,"lodash":14,"topojson":15}],9:[function(require,module,exports){
+},{"./globes.js":10,"./micro.js":11,"./products.js":19,"./when.js":20,"backbone":12,"d3":13,"lodash":15,"topojson":16}],10:[function(require,module,exports){
 /**
  * globes - a set of models of the earth, each having their own kind of projection and onscreen behavior.
  *
@@ -26149,7 +26177,7 @@ module.exports = function() {
 
 };
 
-},{"./micro.js":10,"d3":12,"lodash":14}],10:[function(require,module,exports){
+},{"./micro.js":11,"d3":13,"lodash":15}],11:[function(require,module,exports){
 /**
  * micro - a grab bag of somewhat useful utility functions and other stuff that requires unit testing
  *
@@ -26813,7 +26841,7 @@ module.exports = function() {
 
 };
 
-},{"./when.js":19,"backbone":11,"lodash":14}],11:[function(require,module,exports){
+},{"./when.js":20,"backbone":12,"lodash":15}],12:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.3
 
@@ -28711,9 +28739,9 @@ module.exports = function() {
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":13,"underscore":16}],12:[function(require,module,exports){
+},{"jquery":14,"underscore":17}],13:[function(require,module,exports){
 arguments[4][4][0].apply(exports,arguments)
-},{"dup":4}],13:[function(require,module,exports){
+},{"dup":4}],14:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -37925,9 +37953,9 @@ return jQuery;
 
 }));
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 arguments[4][6][0].apply(exports,arguments)
-},{"dup":6}],15:[function(require,module,exports){
+},{"dup":6}],16:[function(require,module,exports){
 !function() {
   var topojson = {
     version: "1.6.19",
@@ -38463,7 +38491,7 @@ arguments[4][6][0].apply(exports,arguments)
   else this.topojson = topojson;
 }();
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -40013,7 +40041,7 @@ arguments[4][6][0].apply(exports,arguments)
   }
 }.call(this));
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var earth = require('./earth.js');
 
 var earthHandle;
@@ -40029,7 +40057,7 @@ module.exports = {
   }
 }
 
-},{"./earth.js":8}],18:[function(require,module,exports){
+},{"./earth.js":9}],19:[function(require,module,exports){
 /**
  * products - defines the behavior of weather data grids, including grid construction, interpolation, and color scales.
  *
@@ -40730,7 +40758,7 @@ module.exports = function() {
 
 }();
 
-},{"./micro.js":10,"./when.js":19,"backbone":11,"lodash":14}],19:[function(require,module,exports){
+},{"./micro.js":11,"./when.js":20,"backbone":12,"lodash":15}],20:[function(require,module,exports){
 (function (process,global){
 /** @license MIT License (c) copyright 2011-2013 original author or authors */
 
@@ -41686,7 +41714,7 @@ module.exports = function () {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":20}],20:[function(require,module,exports){
+},{"_process":21}],21:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};

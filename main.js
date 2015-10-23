@@ -6,24 +6,24 @@ var moment = require('moment');
 var lightningOptions = {
   get: '',
   color: 'red',
-  pointDuration: 10,
+  pointDuration: 10000,
   getData: function(cb) {
     var coord0 = {
-      long: 178.79835810890188,
-      lat: 2.7444937212815645,
+      long: 103,
+      lat: -40,
       dateTime: moment().toDate()
     };
     var coord1 = {
       long: 170,
-      lat: 10,
+      lat: -11,
       dateTime: moment().toDate()
     }
     cb([coord0, coord1]);
     setInterval(function() {
       if(Math.random() > 0.5) {
         var coord = {
-          long: 160 + Math.random() * 20,
-          lat: 2 + Math.random() * 20,
+          long: 100 + Math.random() * 70,
+          lat: -40 + Math.random() * 30,
           dateTime: moment().toDate()
         }
         cb(coord);
