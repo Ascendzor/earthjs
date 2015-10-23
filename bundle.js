@@ -4,23 +4,13 @@ var graticuleLayer = require('interactive-earth-graticule');
 var pointsLayer = require('interactive-earth-points');
 var moment = require('moment');
 
+var intervalHandle;
 var lightningOptions = {
   get: '',
   color: 'red',
-  pointDuration: 10000,
+  pointDuration: 5000,
   getData: function(cb) {
-    var coord0 = {
-      long: 103,
-      lat: -40,
-      dateTime: moment().toDate()
-    };
-    var coord1 = {
-      long: 170,
-      lat: -11,
-      dateTime: moment().toDate()
-    }
-    cb([coord0, coord1]);
-    setInterval(function() {
+    intervalHandle = setInterval(function() {
       if(Math.random() > 0.5) {
         var coord = {
           long: 100 + Math.random() * 70,
@@ -30,6 +20,9 @@ var lightningOptions = {
         cb(coord);
       }
     }, 500);
+  },
+  stopGettingData: function() {
+    clearInterval(intervalHandle);
   }
 }
 var lightningPointsLayer = pointsLayer(lightningOptions)
@@ -46,6 +39,10 @@ setTimeout(function() {
 setTimeout(function() {
   interactiveEarth.addLayer(lightningPointsLayer);
 }, 1000);
+
+setTimeout(function() {
+  interactiveEarth.removeLayer(lightningPointsLayer);
+}, 8000);
 
 },{"interactive-earth":18,"interactive-earth-graticule":3,"interactive-earth-points":8,"moment":2}],2:[function(require,module,exports){
 //! moment.js
@@ -25147,7 +25144,7 @@ module.exports = function (options) {
           .data(_.map(data, function(point) {
             return {type: 'Point', dateTime: point.dateTime, coordinates: [point.long, point.lat]};
           }))
-          .attr('id', function(d, i) { return 'a'+Math.floor(data[i].long) })
+          .attr('id', function(d, i) { return 'a'+Math.floor(data[i].long) }) //temporary, make this a more unique id
           .attr('d', path)
           .attr('class', 'location-mark');
       });
@@ -25155,14 +25152,15 @@ module.exports = function (options) {
     update: function() {
       d3.selectAll('.location-mark').each(function (point) {
         if(moment().diff(moment(point.dateTime)) > options.pointDuration) {
-          var selector = '#a' + Math.floor(point.coordinates[0]);
+          var selector = '#a' + Math.floor(point.coordinates[0]); //0th is long
           var d3Handle = d3.select(selector);
           d3Handle.remove();
         }
       });
     },
     removeLayer: function() {
-      d3.select("#map").selectAll(".circle").remove()
+      options.stopGettingData();
+      d3.select("#map").selectAll(".location-mark").remove()
     }
   }
 }
@@ -25816,6 +25814,8 @@ module.exports = function(containerId) {
       return self;
     }
     self.removeLayer = function(layer) {
+      _.remove(self.layers, layer);
+      console.log(self.layers);
       layer.removeLayer();
       return self;
     }
