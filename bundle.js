@@ -26,6 +26,8 @@ var lightningOptions = {
   }
 }
 var lightningPointsLayer = pointsLayer(lightningOptions)
+var lightningPointsLayerAnother = pointsLayer(lightningOptions)
+var lightningPointsLayerTheThird = pointsLayer(lightningOptions)
 interactiveEarth.drawEarth('earthContainer');
 
 setTimeout(function() {
@@ -41,7 +43,9 @@ setTimeout(function() {
 }, 1000);
 
 setTimeout(function() {
-  interactiveEarth.removeLayer(lightningPointsLayer);
+  interactiveEarth.addLayer(lightningPointsLayer);
+  interactiveEarth.addLayer(lightningPointsLayerAnother);
+  interactiveEarth.addLayer(lightningPointsLayerTheThird);
 }, 8000);
 
 },{"interactive-earth":18,"interactive-earth-graticule":3,"interactive-earth-points":8,"moment":2}],2:[function(require,module,exports){
@@ -25127,14 +25131,17 @@ var _ = require('lodash');
 var moment = require('moment');
 
 var defaultOptions = {
+  id: null,
   color: 'red',
   pointDuration: 10000,
-  getData: function() {}
+  getData: function() {},
+  stopGettingData: function() {}
 }
 module.exports = function (options) {
   if(!options) options == defaultOptions;
   var allPoints = [];
   return {
+    id: options.id,
     addLayer: function(globe, hostElement) {
       options.getData(function(data) {
         if(data.constructor !== Array) data = [data];
@@ -25809,13 +25816,13 @@ module.exports = function(containerId) {
     }
     self.layers = [];
     self.addLayer = function(layer) {
+      if (_.contains(self.layers, layer)) return;
       self.layers.push(layer);
       layer.addLayer(globeAgent.value(), hostElement);
       return self;
     }
     self.removeLayer = function(layer) {
       _.remove(self.layers, layer);
-      console.log(self.layers);
       layer.removeLayer();
       return self;
     }

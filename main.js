@@ -25,6 +25,8 @@ var lightningOptions = {
   }
 }
 var lightningPointsLayer = pointsLayer(lightningOptions)
+var lightningPointsLayerAnother = pointsLayer(lightningOptions)
+var lightningPointsLayerTheThird = pointsLayer(lightningOptions)
 interactiveEarth.drawEarth('earthContainer');
 
 setTimeout(function() {
@@ -40,5 +42,7 @@ setTimeout(function() {
 }, 1000);
 
 setTimeout(function() {
-  interactiveEarth.removeLayer(lightningPointsLayer);
+  interactiveEarth.addLayer(lightningPointsLayer);
+  interactiveEarth.addLayer(lightningPointsLayerAnother);
+  interactiveEarth.addLayer(lightningPointsLayerTheThird);
 }, 8000);
